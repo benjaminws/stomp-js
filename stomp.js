@@ -9,24 +9,36 @@ function Stomp(port, host) {
     this.connect = function() {
         port = this.port;
         host = this.host;
+        frame = this.frame;
+
         console.log('Connecting to ' + host + ':' + port);
-        net.createConnection(function (port, host) {
-            stream.on('connect', function () {
-                console.log('connected');
-                this.frame.connect(stream);
-            });
-            stream.on('data', function (data) {
-                stream.write(data);
-            });
-            stream.on('end', function () {
-                stream.write('goodbye\r\n');
-                stream.end();
-            });
+        client = net.createConnection(port, host);
+        console.dir(client);
+
+        client.addListener('connect', function () {
+            console.log('connected to socket');
+            connected_frame = frame.stomp_connect(client);
+            console.dir(connected_frame);
+        });
+        client.addListener('data', function (data) {
+            console.log("Got: " + data);
+            console.dir(connected_frame);
+        });
+        client.addListener('end', function () {
+            console.log('goodbye');
+        });
+        client.addListener('error', function (error) {
+            console.log(error);
+            console.log("error");
+        });
+        client.addListener('close', function (error) {
+            console.log("disconnected");
         });
     };
 }
 stomp = new Stomp(61613, 'localhost');
+stomp.connect();
 
-console.dir(stomp.connect());
+console.dir(stomp);
 
 module.exports = Stomp;
