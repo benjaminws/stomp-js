@@ -2,14 +2,11 @@ var net = require('net');
 var Frame = require('./frame');
 
 function Stomp(port, host) {
-    this.port = port;
-    this.host = host;
-    this.frame = new Frame();
+    var port = port,
+        host = host,
+        frame = new Frame();
 
     this.connect = function() {
-        port = this.port;
-        host = this.host;
-        frame = this.frame;
 
         console.log('Connecting to ' + host + ':' + port);
         client = net.createConnection(port, host);
@@ -22,7 +19,7 @@ function Stomp(port, host) {
         });
         client.addListener('data', function (data) {
             console.log("Got: " + data);
-            console.dir(connected_frame);
+            connected_frame.parse_frame(data);
         });
         client.addListener('end', function () {
             console.log('goodbye');

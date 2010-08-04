@@ -1,15 +1,15 @@
 var sys = require('sys');
 
 function Frame() {
-    this.connected = false;
-    this.sock = '';
-    this.command = '';
-    this.headers = '';
-    this.body = '';
+    var connected = false,
+        sock = '',
+        command = '',
+        headers = '',
+        body = '';
 
-    this.stomp_connect = function (sock) {
-        this.sock = sock;
-        this.connected = true;
+    this.stomp_connect = function (client) {
+        connected = true;
+        sock = client;
         var args = Array();
         var headers = Array();
 
@@ -22,21 +22,18 @@ function Frame() {
     };
 
     this.build_frame = function(args, want_receipt) {
-        this.command = args['command'];
-        this.headers = args['headers'];
-        this.body = args['body'];
+        command = args['command'];
+        headers = args['headers'];
+        body = args['body'];
         if (want_receipt) {
            receipt_stamp = Math.floor(Math.random()*10000000+1);
-            this.headers['receipt'] = "-"
+           this.headers['receipt'] = "-"
            console.log(want_receipt);
         }
         return this;
     };
 
     this.as_string = function() {
-        command = this.command;
-        headers = this.headers;
-        body = this.body;
         header_strs = Array();
 
         for (var header in headers) {
@@ -49,8 +46,29 @@ function Frame() {
     };
 
     this.send_frame = function(frame) {
-        this.sock.write(frame.as_string());
+        console.dir(sock);
+        sock.write(frame.as_string());
     };
+
+    this.parse_frame = function(data) {
+        args = Array();
+        headers = Array();
+        headers_str = '';
+        body = '';
+
+        command = this.parse_command(data);
+        data = data.slice(command.len+1)
+        headers_str, body = data.split("\n\n");
+        headers = this.parse_headers(headers_str);
+
+        args['command'] = command;
+        args['headers'] = headers;
+        args['body'] = body;
+
+        this_frame = Frame(sock);
+        this_frame.build_frame(args);
+    };
+
 };
 
 module.exports = Frame;
