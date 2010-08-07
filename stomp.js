@@ -10,12 +10,10 @@ function Stomp(port, host) {
 
         console.log('Connecting to ' + host + ':' + port);
         client = net.createConnection(port, host);
-        console.dir(client);
 
         client.addListener('connect', function () {
             console.log('connected to socket');
             connected_frame = frame.stomp_connect(client);
-            console.dir(connected_frame);
         });
         client.addListener('data', function (data) {
             console.log("Got: " + data);
@@ -33,9 +31,7 @@ function Stomp(port, host) {
         });
     };
 }
-stomp = new Stomp(61613, 'localhost');
-stomp.connect();
-
-console.dir(stomp);
+//stomp = new Stomp(61613, 'localhost');
+//stomp.connect();
 
 module.exports = Stomp;

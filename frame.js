@@ -56,17 +56,45 @@ function Frame() {
         headers_str = '';
         body = '';
 
+        console.dir("Data: " + data);
         command = this.parse_command(data);
-        data = data.slice(command.len+1)
-        headers_str, body = data.split("\n\n");
-        headers = this.parse_headers(headers_str);
+        var _data = data.slice(command.length + 1, data.length);
+        _data = _data.toString('utf8', start=0, end=_data.length);
+
+        the_rest = _data.split("\n\n");
+        headers = this.parse_headers(the_rest[0]);
+        body = the_rest[1];
 
         args['command'] = command;
         args['headers'] = headers;
         args['body'] = body;
 
-        this_frame = Frame(sock);
-        this_frame.build_frame(args);
+        console.dir(args);
+        this_frame = new Frame(sock);
+        return this_frame.build_frame(args);
+
+    };
+
+    this.parse_headers = function(headers_str) {
+
+        my_headers = Array();
+        headers_split = headers_str.split("\n");
+        for (var i = 0; i < headers_split.length; i++) {
+            header = headers_split[i].split(":", 1);
+            my_headers[header[0]] = header[1];
+        }
+
+        return my_headers;
+
+    };
+
+    this.parse_command = function(data) {
+
+        this_string = data.toString('ascii', start=0, end=data.length);
+        command = this_string.split("\n");
+        console.log("Command: " + command[0]);
+        return command[0];
+
     };
 
 };
