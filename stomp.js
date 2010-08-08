@@ -1,6 +1,6 @@
-var net = require('net'),
-    Frame = require('./frame');
-    stomp_utils = require('./stomp-utils');
+var net = require('net');
+require('./frame');
+require('./stomp-utils');
 
 Stomp = module.exports = function(port, host, debug) {
     this.port = port;
@@ -19,7 +19,7 @@ Stomp.prototype.connect = function() {
     var _stomp = this;
 
     client.addListener('connect', function () {
-        _stomp.stomp_log.debug('connected to socket');
+        _stomp.stomp_log.debug('Connected to socket');
         _stomp.connected_frame = _stomp.frame.stomp_connect(client);
     });
     client.addListener('data', function (data) {
@@ -29,9 +29,10 @@ Stomp.prototype.connect = function() {
         _stomp.stomp_log.debug('goodbye');
     });
     client.addListener('error', function (error) {
-        console.log("error: " + error);
+        console.log('error: ' + error);
     });
     client.addListener('close', function (error) {
-        _stomp.stomp_log.debug("disconnected");
+        _stomp.stomp_log.debug('disconnected');
     });
+
 };

@@ -1,4 +1,7 @@
-var sys = require('sys');
+require('sys');
+require('./stomp-utils');
+require('./stomp-exceptions');
+
 
 Frame = module.exports = function(logger) {
     this.connected = false;
@@ -19,36 +22,48 @@ Frame.prototype.stomp_connect = function(client) {
     args['headers'] = headers;
     frame_to_send = this.build_frame(args);
     this.send_frame(frame_to_send);
-    this.stomp_log.debug('connected to STOMP');
+    this.stomp_log.debug('Connected to STOMP');
     return this;
 };
 
 Frame.prototype.build_frame = function(args, want_receipt) {
-    command = args['command'];
-    headers = args['headers'];
-    body = args['body'];
+    this.command = args['command'];
+    this.headers = args['headers'];
+    this.body = args['body'];
+    var receipt_stamp = null;
+
     if (want_receipt) {
        receipt_stamp = Math.floor(Math.random()*10000000+1);
-       this.headers['receipt'] = "-"
-       console.log(want_receipt);
+       this.headers['receipt'] = this.session['session'] + '-' + receipt_stamp;
+       this.stomp_log.debug(want_receipt);
     }
+
     return this;
 };
 
 Frame.prototype.as_string = function() {
-    header_strs = Array();
+    var header_strs = Array();
+    var frame = null;
+    var command = this.command;
+    var headers = this.headers;
+    var body = this.body;
 
-    for (var header in this.headers) {
+    for (var header in headers) {
+        this.stomp_log.debug(header);
         header_strs.push(header + ':' + headers[header] + '\n');
     }
 
-    frame = this.command + '\n' + header_strs.join() + '\n' + this.body + '\x00';
+    frame = command + '\n' + header_strs.join('\n') + '\n\n' + body + '\x00';
 
     return frame;
 };
 
 Frame.prototype.send_frame = function(frame) {
     this.sock.write(frame.as_string());
+
+    if ('receipt' in frame.headers) {
+        return this.get_reply();
+    }
 };
 
 Frame.prototype.parse_frame = function(data) {
@@ -59,9 +74,16 @@ Frame.prototype.parse_frame = function(data) {
     var _data = data.slice(this.command.length + 1, data.length);
     _data = _data.toString('utf8', start=0, end=_data.length);
 
-    the_rest = _data.split("\n\n");
+    the_rest = _data.split('\n\n');
     this.headers = this.parse_headers(the_rest[0]);
     this.body = the_rest[1];
+
+    if ('content-length' in this.headers)
+        this.headers['bytes_message'] = true;
+
+    if (this.command == 'ERROR') {
+        throw new BrokerErrorResponse(this.body);
+    }
 
     args['command'] = this.command;
     args['headers'] = this.headers;
@@ -76,10 +98,10 @@ Frame.prototype.parse_headers = function(headers_str) {
 
     var these_headers = Array(),
         one_header = Array();
-    var headers_split = headers_str.split("\n");
+    var headers_split = headers_str.split('\n');
 
     for (var i = 0; i < headers_split.length; i++) {
-        one_header = headers_split[i].split(":");
+        one_header = headers_split[i].split(':');
 
         if (one_header.length > 1) {
             var header_key = one_header.shift();
@@ -99,8 +121,8 @@ Frame.prototype.parse_headers = function(headers_str) {
 Frame.prototype.parse_command = function(data) {
 
     var command;
-    this_string = data.toString('ascii', start=0, end=data.length);
-    command = this_string.split("\n");
+    var this_string = data.toString('ascii', start=0, end=data.length);
+    command = this_string.split('\n');
     return command[0];
 
 };
