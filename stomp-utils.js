@@ -19,15 +19,15 @@ StompQueue = exports.StompQueue = function() {
 
 StompQueue.prototype.get_size = function() {
     return this.queue.length - this.queue_space;
-}
+};
 
 StompQueue.prototype.is_empty = function() {
     return (this.queue.length == 0);
-}
+};
 
 StompQueue.prototype.put = function(item) {
     this.queue.push(item);
-}
+};
 
 StompQueue.prototype.get = function() {
     var item = undefined;
