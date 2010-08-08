@@ -42,11 +42,11 @@ Frame.prototype.build_frame = function(args, want_receipt) {
 };
 
 Frame.prototype.as_string = function() {
-    var header_strs = Array();
-    var frame = null;
-    var command = this.command;
-    var headers = this.headers;
-    var body = this.body;
+    var header_strs = Array(),
+        frame = null,
+        command = this.command,
+        headers = this.headers,
+        body = this.body;
 
     for (var header in headers) {
         this.stomp_log.debug(header);
@@ -67,8 +67,8 @@ Frame.prototype.send_frame = function(frame) {
 };
 
 Frame.prototype.parse_frame = function(data) {
-    var args = [];
-    var headers_str = null;
+    var args = [],
+        headers_str = null;
 
     this.command = this.parse_command(data);
     var _data = data.slice(this.command.length + 1, data.length);
@@ -97,8 +97,8 @@ Frame.prototype.parse_frame = function(data) {
 Frame.prototype.parse_headers = function(headers_str) {
 
     var these_headers = Array(),
-        one_header = Array();
-    var headers_split = headers_str.split('\n');
+        one_header = Array(),
+        headers_split = headers_str.split('\n');
 
     for (var i = 0; i < headers_split.length; i++) {
         one_header = headers_split[i].split(':');
@@ -120,8 +120,8 @@ Frame.prototype.parse_headers = function(headers_str) {
 
 Frame.prototype.parse_command = function(data) {
 
-    var command;
-    var this_string = data.toString('ascii', start=0, end=data.length);
+    var command,
+        this_string = data.toString('ascii', start=0, end=data.length);
     command = this_string.split('\n');
     return command[0];
 

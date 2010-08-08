@@ -15,7 +15,7 @@ Stomp = module.exports = function(port, host, debug) {
 Stomp.prototype.connect = function() {
 
     this.stomp_log.debug('Connecting to ' + this.host + ':' + this.port);
-    client = net.createConnection(this.port, this.host);
+    var client = net.createConnection(this.port, this.host);
     var _stomp = this;
 
     client.addListener('connect', function () {
