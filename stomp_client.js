@@ -1,5 +1,5 @@
 var Stomp = require('./stomp');
 
-var client = new Stomp(61613, 'localhost');
+var client = new Stomp(61613, 'localhost', true);
 
 client.connect();

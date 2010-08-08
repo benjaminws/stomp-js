@@ -1,37 +1,37 @@
-var net = require('net');
-var Frame = require('./frame');
+var net = require('net'),
+    Frame = require('./frame');
+    stomp_utils = require('./stomp-utils');
 
-function Stomp(port, host) {
-    var port = port,
-        host = host,
-        frame = new Frame();
+Stomp = module.exports = function(port, host, debug) {
+    this.port = port;
+    this.host = host;
+    this.socket_connected = false;
+    this.debug = debug;
+    this.stomp_log = new StompLogging(debug);
+    this.frame = new Frame(this.stomp_log);
+    this.connected_frame = null;
+};
 
-    this.connect = function() {
+Stomp.prototype.connect = function() {
 
-        console.log('Connecting to ' + host + ':' + port);
-        client = net.createConnection(port, host);
+    this.stomp_log.debug('Connecting to ' + this.host + ':' + this.port);
+    client = net.createConnection(this.port, this.host);
+    var _stomp = this;
 
-        client.addListener('connect', function () {
-            console.log('connected to socket');
-            connected_frame = frame.stomp_connect(client);
-        });
-        client.addListener('data', function (data) {
-            console.log("Got: " + data);
-            connected_frame.parse_frame(data);
-        });
-        client.addListener('end', function () {
-            console.log('goodbye');
-        });
-        client.addListener('error', function (error) {
-            console.log(error);
-            console.log("error");
-        });
-        client.addListener('close', function (error) {
-            console.log("disconnected");
-        });
-    };
-}
-//stomp = new Stomp(61613, 'localhost');
-//stomp.connect();
-
-module.exports = Stomp;
+    client.addListener('connect', function () {
+        _stomp.stomp_log.debug('connected to socket');
+        _stomp.connected_frame = _stomp.frame.stomp_connect(client);
+    });
+    client.addListener('data', function (data) {
+        _stomp.connected_frame.parse_frame(data);
+    });
+    client.addListener('end', function () {
+        _stomp.stomp_log.debug('goodbye');
+    });
+    client.addListener('error', function (error) {
+        console.log("error: " + error);
+    });
+    client.addListener('close', function (error) {
+        _stomp.stomp_log.debug("disconnected");
+    });
+};

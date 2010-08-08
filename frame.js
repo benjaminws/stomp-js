@@ -1,102 +1,106 @@
 var sys = require('sys');
 
-function Frame() {
-    var connected = false,
-        sock = '',
-        command = '',
-        headers = '',
-        body = '';
+Frame = module.exports = function(logger) {
+    this.connected = false;
+    this.sock = null;
+    this.command = null;
+    this.headers = null;
+    this.body = null;
+    this.stomp_log = logger;
+};
 
-    this.stomp_connect = function (client) {
-        connected = true;
-        sock = client;
-        var args = Array();
-        var headers = Array();
+Frame.prototype.stomp_connect = function(client) {
+    this.connected = true;
+    this.sock = client;
+    var args = {};
+    var headers = {};
 
-        args['command'] = 'CONNECT';
-        args['headers'] = headers;
-        frame_to_send = this.build_frame(args);
-        this.send_frame(frame_to_send);
-        console.log('connected to stomp');
-        return this;
-    };
+    args['command'] = 'CONNECT';
+    args['headers'] = headers;
+    frame_to_send = this.build_frame(args);
+    this.send_frame(frame_to_send);
+    this.stomp_log.debug('connected to STOMP');
+    return this;
+};
 
-    this.build_frame = function(args, want_receipt) {
-        command = args['command'];
-        headers = args['headers'];
-        body = args['body'];
-        if (want_receipt) {
-           receipt_stamp = Math.floor(Math.random()*10000000+1);
-           this.headers['receipt'] = "-"
-           console.log(want_receipt);
-        }
-        return this;
-    };
+Frame.prototype.build_frame = function(args, want_receipt) {
+    command = args['command'];
+    headers = args['headers'];
+    body = args['body'];
+    if (want_receipt) {
+       receipt_stamp = Math.floor(Math.random()*10000000+1);
+       this.headers['receipt'] = "-"
+       console.log(want_receipt);
+    }
+    return this;
+};
 
-    this.as_string = function() {
-        header_strs = Array();
+Frame.prototype.as_string = function() {
+    header_strs = Array();
 
-        for (var header in headers) {
-            header_strs.push(header + ':' + headers[header] + '\n');
-        }
+    for (var header in this.headers) {
+        header_strs.push(header + ':' + headers[header] + '\n');
+    }
 
-        frame = command + '\n' + header_strs.join() + '\n' + body + '\x00';
+    frame = this.command + '\n' + header_strs.join() + '\n' + this.body + '\x00';
 
-        return frame;
-    };
+    return frame;
+};
 
-    this.send_frame = function(frame) {
-        console.dir(sock);
-        sock.write(frame.as_string());
-    };
+Frame.prototype.send_frame = function(frame) {
+    this.sock.write(frame.as_string());
+};
 
-    this.parse_frame = function(data) {
-        args = Array();
-        headers = Array();
-        headers_str = '';
-        body = '';
+Frame.prototype.parse_frame = function(data) {
+    var args = [];
+    var headers_str = null;
 
-        console.dir("Data: " + data);
-        command = this.parse_command(data);
-        var _data = data.slice(command.length + 1, data.length);
-        _data = _data.toString('utf8', start=0, end=_data.length);
+    this.command = this.parse_command(data);
+    var _data = data.slice(this.command.length + 1, data.length);
+    _data = _data.toString('utf8', start=0, end=_data.length);
 
-        the_rest = _data.split("\n\n");
-        headers = this.parse_headers(the_rest[0]);
-        body = the_rest[1];
+    the_rest = _data.split("\n\n");
+    this.headers = this.parse_headers(the_rest[0]);
+    this.body = the_rest[1];
 
-        args['command'] = command;
-        args['headers'] = headers;
-        args['body'] = body;
+    args['command'] = this.command;
+    args['headers'] = this.headers;
+    args['body'] = this.body;
 
-        console.dir(args);
-        this_frame = new Frame(sock);
-        return this_frame.build_frame(args);
-
-    };
-
-    this.parse_headers = function(headers_str) {
-
-        my_headers = Array();
-        headers_split = headers_str.split("\n");
-        for (var i = 0; i < headers_split.length; i++) {
-            header = headers_split[i].split(":", 1);
-            my_headers[header[0]] = header[1];
-        }
-
-        return my_headers;
-
-    };
-
-    this.parse_command = function(data) {
-
-        this_string = data.toString('ascii', start=0, end=data.length);
-        command = this_string.split("\n");
-        console.log("Command: " + command[0]);
-        return command[0];
-
-    };
+    this_frame = new Frame(this.sock);
+    return this_frame.build_frame(args);
 
 };
 
-module.exports = Frame;
+Frame.prototype.parse_headers = function(headers_str) {
+
+    var these_headers = Array(),
+        one_header = Array();
+    var headers_split = headers_str.split("\n");
+
+    for (var i = 0; i < headers_split.length; i++) {
+        one_header = headers_split[i].split(":");
+
+        if (one_header.length > 1) {
+            var header_key = one_header.shift();
+            var header_val = one_header.join(':');
+            these_headers[header_key] = header_val;
+        }
+        else {
+            these_headers[one_header[0]] = one_header[1];
+        }
+
+    }
+
+    return these_headers;
+
+};
+
+Frame.prototype.parse_command = function(data) {
+
+    var command;
+    this_string = data.toString('ascii', start=0, end=data.length);
+    command = this_string.split("\n");
+    return command[0];
+
+};
