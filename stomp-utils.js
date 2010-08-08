@@ -12,7 +12,7 @@ StompLogging.prototype.debug = function(message) {
  * http://safalra.com/web-design/javascript/queues/Queue.js
  * only really semantics have been changed.
  */
-StompQueue = exportsStompQueue = function() {
+StompQueue = exports.StompQueue = function() {
     this.queue = [];
     this.queue_space = 0;
 };
