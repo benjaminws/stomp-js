@@ -1,7 +1,23 @@
 #!/usr/bin/env node
 
-var Stomp = require('./lib/stomp');
+var stomp = require('./lib/stomp');
 
-var client = new Stomp(61613, 'localhost', true);
+var client = new stomp.Stomp(61613, 'localhost', true, {'login': 'bah', 'password': 'bah'});
+
+var queue = '/queue/test';
+
+var headers = {'destination': queue, 'ack': 'client'};
 
 client.connect();
+
+client.on('connected', function() {
+    client.subscribe(headers);
+
+    for (var i = 0; i < 10; i++) {
+        console.log(i);
+        client.send({'destination': queue,
+                     'body': 'Testing' + i,
+                     'persistent': 'true'
+        });
+    }
+});
