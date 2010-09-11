@@ -21,3 +21,7 @@ client.on('connected', function() {
         });
     }
 });
+
+client.on('message', function(message) {
+    console.log(message.body);
+});
