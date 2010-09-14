@@ -2,12 +2,19 @@
 
 var stomp = require('./lib/stomp');
 
-//{'login': 'bah', 'password': 'bah'}
-var client = new stomp.Stomp(61613, 'localhost', true);
+var stomp_args = {
+    port: 61613,
+    host: 'localhost',
+    debug: true
+}
+// Could also add..
+//{login: 'bah', password: 'bah'}
+
+var client = new stomp.Stomp(stomp_args);
 
 var headers = {
-    'destination': '/queue/test',
-    'ack': 'auto'
+    destination: '/queue/test_stomp',
+    ack: 'client'
 };
 
 var messages = [];
@@ -20,14 +27,20 @@ client.on('connected', function() {
 });
 
 client.on('message', function(message) {
+    if (!client.utils.really_defined(message.headers['message-id'])) {
+        console.log(message);
+        return;
+    }
+    client.ack(message.headers['message-id']);
     messages.push(message);
 });
 
 client.on('error', function(error_frame) {
     console.log(error_frame.body);
+    client.disconnect();
 });
 
 process.on('SIGINT', function() {
-    console.log(messages.length);
+    console.log('\nConsumed ' + messages.length + ' messages');
     client.disconnect();
 });
