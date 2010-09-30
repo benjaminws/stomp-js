@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 var stomp = require('./lib/stomp');
+var sys = require('sys');
 
 var stomp_args = {
     port: 61613,
@@ -14,7 +15,8 @@ var client = new stomp.Stomp(stomp_args);
 
 var headers = {
     destination: '/queue/test_stomp',
-    ack: 'client'
+    ack: 'client',
+    'activemq.prefetchSize':5
 };
 
 var messages = [];
@@ -23,12 +25,10 @@ client.connect();
 
 client.on('connected', function() {
     client.subscribe(headers);
-    console.log('Connected');
 });
 
 client.on('message', function(message) {
     if (!client.utils.really_defined(message.headers['message-id'])) {
-        console.log(message);
         return;
     }
     client.ack(message.headers['message-id']);
