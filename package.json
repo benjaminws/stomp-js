@@ -1,0 +1,16 @@
+{
+  "name" : "stomp-js",
+  "description": "Implementation of the STOMP protocol in node.js",
+  "keywords": [ "STOMP", "messaging", "queue", "protocol" ],
+  "version": "v0.0.1",
+  "homepage": "https://github.com/benjaminws/stomp-js",
+  "author": "Benjamin W. Smith <benjaminws@just-another.net>",
+  "repository" : {
+    "type" : "git",
+    "url" : "https://github.com/benjaminws/stomp-js"
+  },
+  "licenses" : [{
+    "type" : "BSD",
+    "url" : "http://github.com/benjaminws/stomp-js/raw/master/LICENSE"
+  }]
+}

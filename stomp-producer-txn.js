@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// Same as stomp-producer.js, but transactional
 
 var stomp = require('./lib/stomp');
 
@@ -13,7 +14,7 @@ var receipt = false;
 stomp_args = {
     port: 61613,
     host: 'localhost',
-    debug: false,
+    debug: true,
     login: 'guest',
     passcode: 'guest',
 }
@@ -27,11 +28,15 @@ client.connect();
 client.on('connected', function() {
     num = num || 1000;
     for (var i = 0; i < num; i++) {
+        txn = client.begin();
         client.send({
             'destination': queue,
             'body': 'Testing' + i,
-            'persistent': 'true'
+            'persistent': 'true',
+            'transaction': txn
         }, receipt);
+        client.commit(txn);
+        //client.abort(txn);
     }
     console.log('Produced ' + num + ' messages');
     client.disconnect();

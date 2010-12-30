@@ -1,23 +1,30 @@
 #!/usr/bin/env node
 
+var sys = require('sys');
 var stomp = require('./lib/stomp');
 
+// Set debug to true for more verbose output.
+// login and passcode are optional (required by rabbitMQ)
 var stomp_args = {
     port: 61613,
     host: 'localhost',
-    debug: true
-}
-// Could also add..
-//{login: 'bah', password: 'bah'}
+    debug: false,
+    login: 'guest',
+    passcode: 'guest',
+};
 
 var client = new stomp.Stomp(stomp_args);
 
+// 'activemq.prefetchSize' is optional.
+// Specified number will 'fetch' that many messages
+// and dump it to the client.
 var headers = {
     destination: '/queue/test_stomp',
-    ack: 'client'
+    ack: 'client',
+//    'activemq.prefetchSize': '10'
 };
 
-var messages = [];
+var messages = 0;
 
 client.connect();
 
@@ -27,12 +34,8 @@ client.on('connected', function() {
 });
 
 client.on('message', function(message) {
-    if (!client.utils.really_defined(message.headers['message-id'])) {
-        console.log(message);
-        return;
-    }
     client.ack(message.headers['message-id']);
-    messages.push(message);
+    messages++;
 });
 
 client.on('error', function(error_frame) {
@@ -41,6 +44,6 @@ client.on('error', function(error_frame) {
 });
 
 process.on('SIGINT', function() {
-    console.log('\nConsumed ' + messages.length + ' messages');
+    console.log('\nConsumed ' + messages + ' messages');
     client.disconnect();
 });
