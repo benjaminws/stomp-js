@@ -12,7 +12,7 @@
   },
   "repository" : {
     "type" : "git",
-    "url" : "https//github.com/benjaminws/stomp-js.git"
+    "url" : "https://github.com/benjaminws/stomp-js.git"
   },
   "directories" : {
     "doc": "./doc",
@@ -21,6 +21,6 @@
   },
   "licenses" : [{
     "type" : "BSD",
-    "url" : "http://github.com/benjaminws/stomp-js/raw/master/LICENSE"
+    "url" : "https://github.com/benjaminws/stomp-js/raw/master/LICENSE"
   }]
 }
