@@ -11,12 +11,12 @@ For documentation see doc/stomp.md and doc/frame.md
 
 ### Consumer
 
-See stomp-consumer.js
+See examples/stomp-consumer.js
 
 ### Producer
 
-See stomp-producer.js
+See examples/stomp-producer.js
 
 ### Producer with Transaction Support
 
-See stomp-producer-txn.js
+See examples/stomp-producer-txn.js
