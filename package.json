@@ -5,9 +5,15 @@
   "version": "v0.0.1",
   "homepage": "https://github.com/benjaminws/stomp-js",
   "author": "Benjamin W. Smith <benjaminws@just-another.net>",
+  "main" : "stomp-js",
   "repository" : {
     "type" : "git",
     "url" : "https://github.com/benjaminws/stomp-js"
+  },
+  "directories" : {
+    "doc": "./doc",
+    "lib": "./lib",
+    "examples": "./examples"
   },
   "licenses" : [{
     "type" : "BSD",
