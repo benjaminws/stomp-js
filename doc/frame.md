@@ -6,7 +6,7 @@ The `Frame` module provides an object representation of a `Stomp` frame.
 
 An instance of the `Frame` object.
 
-var frame = new frame.Frame();
+    var frame = new frame.Frame();
 
 ### frame.Frame.build_frame()
 
