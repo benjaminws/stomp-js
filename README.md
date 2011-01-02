@@ -7,6 +7,12 @@ An exercise with node.js to implement the STOMP protocol.
 
 For documentation see doc/stomp.md and doc/frame.md
 
+## Installation
+
+`npm install stomp`
+
+`git clone https://benjaminws@github.com/benjaminws/stomp-js.git`
+
 ## Examples
 
 ### Consumer
