@@ -1,16 +1,16 @@
 #!/usr/bin/env node
 
-var stomp = require('./lib/stomp');
+var stomp = require('stomp');
 
 var num = process.argv[2];
 
 // Set to true if you want a receipt
 // of all messages sent.
-var receipt = false;
+var receipt = true;
 
 // Set debug to true for more verbose output.
 // login and passcode are optional (required by rabbitMQ)
-stomp_args = {
+var stomp_args = {
     port: 61613,
     host: 'localhost',
     debug: false,

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 var sys = require('sys');
-var stomp = require('./lib/stomp');
+var stomp = require('stomp');
 
 // Set debug to true for more verbose output.
 // login and passcode are optional (required by rabbitMQ)
