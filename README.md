@@ -29,4 +29,4 @@ See examples/stomp-producer-txn.js
 
 ### Contributors
 
-rofflwaffls@gmail.com
+rofflwaffls -at- gmail.com
