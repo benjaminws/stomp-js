@@ -26,3 +26,7 @@ See examples/stomp-producer.js
 ### Producer with Transaction Support
 
 See examples/stomp-producer-txn.js
+
+### Contributors
+
+rofflwaffls@gmail.com
