@@ -7,10 +7,6 @@
   "author": "Benjamin W. Smith <benjaminws@just-another.net>",
   "contributors" : [ "rofflwaffls@gmail.com" ],
   "main" : "lib/stomp",
-  "modules": {
-    "stomp": "./lib/stomp",
-    "frame": "./lib/frame"
-  },
   "repository" : {
     "type" : "git",
     "url" : "https://benjaminws@github.com/benjaminws/stomp-js.git"
