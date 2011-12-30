@@ -29,7 +29,7 @@ client.on('connected', function() {
     for (var i = 0; i < num; i++) {
         client.send({
             'destination': queue,
-            'body': 'Testing' + i,
+            'body': 'Testing\n\ntesting1\n\ntesting2 ' + i,
             'persistent': 'true'
         }, receipt);
     }

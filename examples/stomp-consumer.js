@@ -34,6 +34,8 @@ client.on('connected', function() {
 });
 
 client.on('message', function(message) {
+    //console.log("HEADERS: " + sys.inspect(message.headers));
+    //console.log("BODY: " + message.body);
     client.ack(message.headers['message-id']);
     messages++;
 });
