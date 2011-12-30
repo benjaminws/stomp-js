@@ -24,6 +24,11 @@ var queue = '/queue/test_stomp';
 
 client.connect();
 
+function sleep(milliSeconds) {
+    var startTime = new Date().getTime();
+    while (new Date().getTime() < startTime + milliSeconds);
+}
+
 client.on('connected', function() {
     num = num || 1000;
     for (var i = 0; i < num; i++) {
@@ -32,6 +37,7 @@ client.on('connected', function() {
             'body': 'Testing\n\ntesting1\n\ntesting2 ' + i,
             'persistent': 'true'
         }, receipt);
+        sleep(250);
     }
     console.log('Produced ' + num + ' messages');
     client.disconnect();

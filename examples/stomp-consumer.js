@@ -36,6 +36,7 @@ client.on('connected', function() {
 client.on('message', function(message) {
     //console.log("HEADERS: " + sys.inspect(message.headers));
     //console.log("BODY: " + message.body);
+    console.log("Got message: " + message.headers['message-id']);
     client.ack(message.headers['message-id']);
     messages++;
 });
