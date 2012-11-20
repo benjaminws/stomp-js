@@ -1,0 +1,365 @@
+<!DOCTYPE html>  <html> <head>   <title>stomp.js</title>   <meta http-equiv="content-type" content="text/html; charset=UTF-8">   <link rel="stylesheet" media="all" href="rocco.css" /> </head> <body> <div id="navbar">     <h3>stomp-js - Implementation of the STOMP protocol in node.js<em></em></h3>   </div>   <div id="container">     <div id="background"></div>            <div id="jump_to">         Jump To &hellip;         <div id="jump_wrapper">           <div id="jump_page">           <a class="source" href="index.html">Index</a>                                           <a class="source" href="frame.html">                 frame.js               </a>                                           <a class="source" href="index.html">                 index.js               </a>                                           <a class="source" href="stomp.html">                 stomp.js               </a>                                           <a class="source" href="stomp-utils.html">                 stomp-utils.js               </a>                                           <a class="source" href="stomp-exceptions.html">                 stomp-exceptions.js               </a>                        </div>         </div>       </div>          <table cellpadding="0" cellspacing="0">       <thead>         <tr>           <th class="docs">             <h1>               stomp.js             </h1>           </th>           <th class="code">           </th>         </tr>       </thead>       <tbody>                               <tr id="section-1">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-1">&#182;</a>               </div>               <h2>stomp</h2>
+
+<p>The <code>Stomp</code> module provides you with a client interface for interacting with STOMP messaging brokers</p>
+
+<h3>stomp.Stomp</h3>
+
+<p>An instance of the <code>Stomp</code> object.  Initialized like so:</p>
+
+<pre><code>var stomp_args = {
+    port: 61613,
+    host: 'localhost',
+    debug: false,
+    login: 'guest',
+    passcode: 'guest',
+};
+
+var client = new stomp.Stomp(stomp_args);</code></pre>
+
+<p>If debug is set to true, extra output will be printed to the console.</p>             </td>             <td class="code">               <div class="highlight"><pre></pre></div>             </td>           </tr>                               <tr id="section-2">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-2">&#182;</a>               </div>               <h2>Helpers to handle frames, and do parsing</h2>             </td>             <td class="code">               <div class="highlight"><pre><span class="kd">var</span> <span class="nx">net</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;net&#39;</span><span class="p">),</span>
+    <span class="nx">tls</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;tls&#39;</span><span class="p">),</span>
+    <span class="nx">sys</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;util&#39;</span><span class="p">),</span>
+    <span class="nx">frame</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;./frame&#39;</span><span class="p">),</span>
+    <span class="nx">stomp_utils</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;./stomp-utils&#39;</span><span class="p">),</span>
+    <span class="nx">exceptions</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;./stomp-exceptions&#39;</span><span class="p">),</span>
+    <span class="nx">utils</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">stomp_utils</span><span class="p">.</span><span class="nx">StompUtils</span><span class="p">(),</span>
+    <span class="nx">log</span> <span class="o">=</span> <span class="kc">null</span><span class="p">;</span>
+
+
+<span class="kd">function</span> <span class="nx">parse_command</span><span class="p">(</span><span class="nx">data</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">command</span><span class="p">,</span>
+        <span class="nx">this_string</span> <span class="o">=</span> <span class="nx">data</span><span class="p">.</span><span class="nx">toString</span><span class="p">(</span><span class="s1">&#39;utf8&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="nx">data</span><span class="p">.</span><span class="nx">length</span><span class="p">);</span>
+    <span class="nx">command</span> <span class="o">=</span> <span class="nx">this_string</span><span class="p">.</span><span class="nx">split</span><span class="p">(</span><span class="s1">&#39;\n&#39;</span><span class="p">);</span>
+    <span class="k">return</span> <span class="nx">command</span><span class="p">[</span><span class="mi">0</span><span class="p">];</span>
+<span class="p">};</span>
+
+<span class="kd">function</span> <span class="nx">parse_headers</span><span class="p">(</span><span class="nx">headers_str</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">these_headers</span> <span class="o">=</span> <span class="p">{},</span>
+        <span class="nx">one_header</span> <span class="o">=</span> <span class="p">[],</span>
+        <span class="nx">header_key</span> <span class="o">=</span> <span class="kc">null</span><span class="p">,</span>
+        <span class="nx">header_val</span> <span class="o">=</span> <span class="kc">null</span><span class="p">,</span>
+        <span class="nx">headers_split</span> <span class="o">=</span> <span class="nx">headers_str</span><span class="p">.</span><span class="nx">split</span><span class="p">(</span><span class="s1">&#39;\n&#39;</span><span class="p">);</span>
+
+    <span class="k">for</span> <span class="p">(</span><span class="kd">var</span> <span class="nx">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span> <span class="o">&lt;</span> <span class="nx">headers_split</span><span class="p">.</span><span class="nx">length</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">one_header</span> <span class="o">=</span> <span class="nx">headers_split</span><span class="p">[</span><span class="nx">i</span><span class="p">].</span><span class="nx">split</span><span class="p">(</span><span class="s1">&#39;:&#39;</span><span class="p">);</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nx">one_header</span><span class="p">.</span><span class="nx">length</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
+            <span class="nx">header_key</span> <span class="o">=</span> <span class="nx">one_header</span><span class="p">.</span><span class="nx">shift</span><span class="p">();</span>
+            <span class="nx">header_val</span> <span class="o">=</span> <span class="nx">one_header</span><span class="p">.</span><span class="nx">join</span><span class="p">(</span><span class="s1">&#39;:&#39;</span><span class="p">);</span>
+            <span class="nx">these_headers</span><span class="p">[</span><span class="nx">header_key</span><span class="p">]</span> <span class="o">=</span> <span class="nx">header_val</span><span class="p">;</span>
+        <span class="p">}</span>
+        <span class="k">else</span> <span class="p">{</span>
+            <span class="nx">these_headers</span><span class="p">[</span><span class="nx">one_header</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">=</span> <span class="nx">one_header</span><span class="p">[</span><span class="mi">1</span><span class="p">];</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="nx">these_headers</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="kd">function</span> <span class="nx">parse_frame</span><span class="p">(</span><span class="nx">chunk</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">args</span> <span class="o">=</span> <span class="p">{},</span>
+        <span class="nx">data</span> <span class="o">=</span> <span class="kc">null</span><span class="p">,</span>
+        <span class="nx">command</span> <span class="o">=</span> <span class="kc">null</span><span class="p">,</span>
+        <span class="nx">headers</span> <span class="o">=</span> <span class="kc">null</span><span class="p">,</span>
+        <span class="nx">body</span> <span class="o">=</span> <span class="kc">null</span><span class="p">,</span>
+        <span class="nx">headers_str</span> <span class="o">=</span> <span class="kc">null</span><span class="p">;</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">utils</span><span class="p">.</span><span class="nx">really_defined</span><span class="p">(</span><span class="nx">chunk</span><span class="p">))</span>
+        <span class="k">return</span> <span class="kc">null</span><span class="p">;</span>
+
+    <span class="nx">command</span> <span class="o">=</span> <span class="nx">parse_command</span><span class="p">(</span><span class="nx">chunk</span><span class="p">);</span>
+    <span class="nx">data</span> <span class="o">=</span> <span class="nx">chunk</span><span class="p">.</span><span class="nx">slice</span><span class="p">(</span><span class="nx">command</span><span class="p">.</span><span class="nx">length</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="nx">chunk</span><span class="p">.</span><span class="nx">length</span><span class="p">);</span>
+    <span class="nx">data</span> <span class="o">=</span> <span class="nx">data</span><span class="p">.</span><span class="nx">toString</span><span class="p">(</span><span class="s1">&#39;utf8&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="nx">data</span><span class="p">.</span><span class="nx">length</span><span class="p">);</span>
+
+    <span class="kd">var</span> <span class="nx">the_rest</span> <span class="o">=</span> <span class="nx">data</span><span class="p">.</span><span class="nx">split</span><span class="p">(</span><span class="s1">&#39;\n\n&#39;</span><span class="p">);</span>
+    <span class="nx">headers</span> <span class="o">=</span> <span class="nx">parse_headers</span><span class="p">(</span><span class="nx">the_rest</span><span class="p">[</span><span class="mi">0</span><span class="p">]);</span>
+    <span class="nx">body</span> <span class="o">=</span> <span class="nx">the_rest</span><span class="p">.</span><span class="nx">slice</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nx">the_rest</span><span class="p">.</span><span class="nx">length</span><span class="p">);</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="s1">&#39;content-length&#39;</span> <span class="k">in</span> <span class="nx">headers</span><span class="p">)</span>
+       <span class="nx">headers</span><span class="p">[</span><span class="s1">&#39;bytes_message&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">true</span><span class="p">;</span>
+
+    <span class="nx">args</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="nx">command</span><span class="o">:</span> <span class="nx">command</span><span class="p">,</span>
+        <span class="nx">headers</span><span class="o">:</span> <span class="nx">headers</span><span class="p">,</span>
+        <span class="nx">body</span><span class="o">:</span> <span class="nx">body</span>
+    <span class="p">}</span>
+
+    <span class="kd">var</span> <span class="nx">this_frame</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">frame</span><span class="p">.</span><span class="nx">Frame</span><span class="p">();</span>
+    <span class="kd">var</span> <span class="nx">return_frame</span> <span class="o">=</span> <span class="nx">this_frame</span><span class="p">.</span><span class="nx">build_frame</span><span class="p">(</span><span class="nx">args</span><span class="p">);</span>
+
+    <span class="k">return</span> <span class="nx">return_frame</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="kd">function</span> <span class="nx">_connect</span><span class="p">(</span><span class="nx">stomp</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">log</span> <span class="o">=</span> <span class="nx">stomp</span><span class="p">.</span><span class="nx">log</span><span class="p">;</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="nx">stomp</span><span class="p">.</span><span class="nx">ssl</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">log</span><span class="p">.</span><span class="nx">debug</span><span class="p">(</span><span class="s1">&#39;Connecting to &#39;</span> <span class="o">+</span> <span class="nx">stomp</span><span class="p">.</span><span class="nx">host</span> <span class="o">+</span> <span class="s1">&#39;:&#39;</span> <span class="o">+</span> <span class="nx">stomp</span><span class="p">.</span><span class="nx">port</span> <span class="o">+</span> <span class="s1">&#39; using SSL&#39;</span><span class="p">);</span>
+        <span class="nx">stomp</span><span class="p">.</span><span class="nx">socket</span> <span class="o">=</span> <span class="nx">tls</span><span class="p">.</span><span class="nx">connect</span><span class="p">(</span><span class="nx">stomp</span><span class="p">.</span><span class="nx">port</span><span class="p">,</span> <span class="nx">stomp</span><span class="p">.</span><span class="nx">host</span><span class="p">,</span> <span class="nx">stomp</span><span class="p">.</span><span class="nx">ssl_options</span><span class="p">,</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="nx">log</span><span class="p">.</span><span class="nx">debug</span><span class="p">(</span><span class="s1">&#39;SSL connection complete&#39;</span><span class="p">);</span>
+            <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">stomp</span><span class="p">.</span><span class="nx">socket</span><span class="p">.</span><span class="nx">authorized</span><span class="p">)</span> <span class="p">{</span>
+                <span class="nx">log</span><span class="p">.</span><span class="nx">error</span><span class="p">(</span><span class="s1">&#39;SSL is not authorized: &#39;</span><span class="o">+</span><span class="nx">stomp</span><span class="p">.</span><span class="nx">socket</span><span class="p">.</span><span class="nx">authorizationError</span><span class="p">);</span>
+                <span class="k">if</span> <span class="p">(</span><span class="nx">stomp</span><span class="p">.</span><span class="nx">ssl_validate</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="nx">_disconnect</span><span class="p">(</span><span class="nx">stomp</span><span class="p">);</span>
+                    <span class="k">return</span><span class="p">;</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+            <span class="nx">_setupListeners</span><span class="p">(</span><span class="nx">stomp</span><span class="p">);</span>
+        <span class="p">});</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+        <span class="nx">log</span><span class="p">.</span><span class="nx">debug</span><span class="p">(</span><span class="s1">&#39;Connecting to &#39;</span> <span class="o">+</span> <span class="nx">stomp</span><span class="p">.</span><span class="nx">host</span> <span class="o">+</span> <span class="s1">&#39;:&#39;</span> <span class="o">+</span> <span class="nx">stomp</span><span class="p">.</span><span class="nx">port</span><span class="p">);</span>
+        <span class="nx">stomp</span><span class="p">.</span><span class="nx">socket</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">net</span><span class="p">.</span><span class="nx">Socket</span><span class="p">();</span>
+        <span class="nx">stomp</span><span class="p">.</span><span class="nx">socket</span><span class="p">.</span><span class="nx">connect</span><span class="p">(</span><span class="nx">stomp</span><span class="p">.</span><span class="nx">port</span><span class="p">,</span> <span class="nx">stomp</span><span class="p">.</span><span class="nx">host</span><span class="p">);</span>
+        <span class="nx">_setupListeners</span><span class="p">(</span><span class="nx">stomp</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">function</span> <span class="nx">_setupListeners</span><span class="p">(</span><span class="nx">stomp</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">function</span> <span class="nx">_connected</span><span class="p">()</span> <span class="p">{</span>
+        <span class="nx">log</span><span class="p">.</span><span class="nx">debug</span><span class="p">(</span><span class="s1">&#39;Connected to socket&#39;</span><span class="p">);</span>
+        <span class="kd">var</span> <span class="nx">headers</span> <span class="o">=</span> <span class="p">{};</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nx">utils</span><span class="p">.</span><span class="nx">really_defined</span><span class="p">(</span><span class="nx">stomp</span><span class="p">.</span><span class="nx">login</span><span class="p">)</span> <span class="o">&amp;&amp;</span>
+            <span class="nx">utils</span><span class="p">.</span><span class="nx">really_defined</span><span class="p">(</span><span class="nx">stomp</span><span class="p">.</span><span class="nx">passcode</span><span class="p">))</span> <span class="p">{</span>
+            <span class="nx">headers</span><span class="p">.</span><span class="nx">login</span> <span class="o">=</span> <span class="nx">stomp</span><span class="p">.</span><span class="nx">login</span><span class="p">;</span>
+            <span class="nx">headers</span><span class="p">.</span><span class="nx">passcode</span> <span class="o">=</span> <span class="nx">stomp</span><span class="p">.</span><span class="nx">passcode</span><span class="p">;</span>
+        <span class="p">}</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nx">utils</span><span class="p">.</span><span class="nx">really_defined</span><span class="p">(</span><span class="nx">stomp</span><span class="p">[</span><span class="s2">&quot;client-id&quot;</span><span class="p">]))</span> <span class="p">{</span>
+            <span class="nx">headers</span><span class="p">[</span><span class="s2">&quot;client-id&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nx">stomp</span><span class="p">[</span><span class="s2">&quot;client-id&quot;</span><span class="p">];</span>
+        <span class="p">}</span>
+        <span class="nx">stomp_connect</span><span class="p">(</span><span class="nx">stomp</span><span class="p">,</span> <span class="nx">headers</span><span class="p">);</span>
+    <span class="p">}</span>
+
+    <span class="kd">var</span> <span class="nx">socket</span> <span class="o">=</span> <span class="nx">stomp</span><span class="p">.</span><span class="nx">socket</span><span class="p">;</span>
+
+    <span class="nx">socket</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">&#39;drain&#39;</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">data</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">log</span><span class="p">.</span><span class="nx">debug</span><span class="p">(</span><span class="s1">&#39;draining&#39;</span><span class="p">);</span>
+    <span class="p">});</span>
+
+    <span class="kd">var</span> <span class="nx">buffer</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span><span class="p">;</span>
+    <span class="nx">socket</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">chunk</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">buffer</span> <span class="o">+=</span> <span class="nx">chunk</span><span class="p">;</span>
+        <span class="kd">var</span> <span class="nx">frames</span> <span class="o">=</span> <span class="nx">buffer</span><span class="p">.</span><span class="nx">split</span><span class="p">(</span><span class="s1">&#39;\0\n&#39;</span><span class="p">);</span></pre></div>             </td>           </tr>                               <tr id="section-3">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-3">&#182;</a>               </div>               <p>Temporary fix : NULL,LF is not a guranteed standard, the LF is optional, so lets deal with it.  (Rauls)</p>             </td>             <td class="code">               <div class="highlight"><pre>        <span class="k">if</span> <span class="p">(</span><span class="nx">frames</span><span class="p">.</span><span class="nx">length</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
+            <span class="nx">frames</span> <span class="o">=</span> <span class="nx">buffer</span><span class="p">.</span><span class="nx">split</span><span class="p">(</span><span class="s1">&#39;\0&#39;</span><span class="p">);</span>
+        <span class="p">}</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="nx">frames</span><span class="p">.</span><span class="nx">length</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span> <span class="k">return</span><span class="p">;</span>
+        <span class="nx">buffer</span> <span class="o">=</span> <span class="nx">frames</span><span class="p">.</span><span class="nx">pop</span><span class="p">();</span>
+
+        <span class="kd">var</span> <span class="nx">parsed_frame</span> <span class="o">=</span> <span class="kc">null</span><span class="p">;</span>
+        <span class="kd">var</span> <span class="nx">_frame</span> <span class="o">=</span> <span class="kc">null</span><span class="p">;</span>
+        <span class="k">while</span> <span class="p">(</span><span class="nx">_frame</span> <span class="o">=</span> <span class="nx">frames</span><span class="p">.</span><span class="nx">shift</span><span class="p">())</span> <span class="p">{</span>
+            <span class="nx">parsed_frame</span> <span class="o">=</span> <span class="nx">parse_frame</span><span class="p">(</span><span class="nx">_frame</span><span class="p">);</span>
+            <span class="nx">stomp</span><span class="p">.</span><span class="nx">handle_new_frame</span><span class="p">(</span><span class="nx">parsed_frame</span><span class="p">);</span>
+        <span class="p">}</span>
+    <span class="p">});</span>
+
+    <span class="nx">socket</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">&#39;end&#39;</span><span class="p">,</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+        <span class="nx">log</span><span class="p">.</span><span class="nx">debug</span><span class="p">(</span><span class="s2">&quot;end&quot;</span><span class="p">);</span>
+    <span class="p">});</span>
+
+    <span class="nx">socket</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">&#39;error&#39;</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">error</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">log</span><span class="p">.</span><span class="nx">error</span><span class="p">(</span><span class="nx">error</span><span class="p">.</span><span class="nx">stack</span> <span class="o">+</span> <span class="s1">&#39;error name: &#39;</span> <span class="o">+</span> <span class="nx">error</span><span class="p">.</span><span class="nx">name</span><span class="p">);</span>
+        <span class="nx">stomp</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s2">&quot;error&quot;</span><span class="p">,</span> <span class="nx">error</span><span class="p">);</span>
+    <span class="p">});</span>
+
+    <span class="nx">socket</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">&#39;close&#39;</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">error</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">log</span><span class="p">.</span><span class="nx">debug</span><span class="p">(</span><span class="s1">&#39;disconnected&#39;</span><span class="p">);</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nx">error</span><span class="p">)</span> <span class="p">{</span>
+            <span class="nx">log</span><span class="p">.</span><span class="nx">error</span><span class="p">(</span><span class="s1">&#39;Disconnected with error: &#39;</span> <span class="o">+</span> <span class="nx">error</span><span class="p">);</span>
+        <span class="p">}</span>
+        <span class="nx">stomp</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s2">&quot;disconnected&quot;</span><span class="p">,</span> <span class="nx">error</span><span class="p">);</span>
+    <span class="p">});</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="nx">stomp</span><span class="p">.</span><span class="nx">ssl</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">_connected</span><span class="p">();</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+        <span class="nx">socket</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">&#39;connect&#39;</span><span class="p">,</span> <span class="nx">_connected</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">};</span>
+
+<span class="kd">function</span> <span class="nx">stomp_connect</span><span class="p">(</span><span class="nx">stomp</span><span class="p">,</span> <span class="nx">headers</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">_frame</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">frame</span><span class="p">.</span><span class="nx">Frame</span><span class="p">(),</span>
+        <span class="nx">args</span> <span class="o">=</span> <span class="p">{},</span>
+        <span class="nx">headers</span> <span class="o">=</span> <span class="nx">headers</span> <span class="o">||</span> <span class="p">{};</span>
+
+    <span class="nx">args</span><span class="p">[</span><span class="s1">&#39;command&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;CONNECT&#39;</span><span class="p">;</span>
+    <span class="nx">args</span><span class="p">[</span><span class="s1">&#39;headers&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nx">headers</span><span class="p">;</span>
+
+    <span class="kd">var</span> <span class="nx">frame_to_send</span> <span class="o">=</span> <span class="nx">_frame</span><span class="p">.</span><span class="nx">build_frame</span><span class="p">(</span><span class="nx">args</span><span class="p">);</span>
+
+    <span class="nx">send_frame</span><span class="p">(</span><span class="nx">stomp</span><span class="p">,</span> <span class="nx">frame_to_send</span><span class="p">);</span>
+<span class="p">};</span>
+
+<span class="kd">function</span> <span class="nx">_disconnect</span><span class="p">(</span><span class="nx">stomp</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">socket</span> <span class="o">=</span> <span class="nx">stomp</span><span class="p">.</span><span class="nx">socket</span><span class="p">;</span>
+    <span class="nx">socket</span><span class="p">.</span><span class="nx">end</span><span class="p">();</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nx">socket</span><span class="p">.</span><span class="nx">readyState</span> <span class="o">==</span> <span class="s1">&#39;readOnly&#39;</span><span class="p">)</span>
+        <span class="nx">socket</span><span class="p">.</span><span class="nx">destroy</span><span class="p">();</span>
+    <span class="nx">log</span><span class="p">.</span><span class="nx">debug</span><span class="p">(</span><span class="s1">&#39;disconnect called&#39;</span><span class="p">);</span>
+<span class="p">};</span>
+
+<span class="kd">function</span> <span class="nx">send_command</span><span class="p">(</span><span class="nx">stomp</span><span class="p">,</span> <span class="nx">command</span><span class="p">,</span> <span class="nx">headers</span><span class="p">,</span> <span class="nx">body</span><span class="p">,</span> <span class="nx">want_receipt</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">want_receipt</span> <span class="o">=</span> <span class="nx">want_receipt</span> <span class="o">||</span> <span class="kc">false</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">utils</span><span class="p">.</span><span class="nx">really_defined</span><span class="p">(</span><span class="nx">headers</span><span class="p">))</span>
+        <span class="nx">headers</span> <span class="o">=</span> <span class="p">{};</span>
+
+    <span class="kd">var</span> <span class="nx">args</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">&#39;command&#39;</span><span class="o">:</span> <span class="nx">command</span><span class="p">,</span>
+        <span class="s1">&#39;headers&#39;</span><span class="o">:</span> <span class="nx">headers</span><span class="p">,</span>
+        <span class="s1">&#39;body&#39;</span><span class="o">:</span> <span class="nx">body</span>
+    <span class="p">};</span>
+
+    <span class="kd">var</span> <span class="nx">_frame</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">frame</span><span class="p">.</span><span class="nx">Frame</span><span class="p">();</span>
+    <span class="kd">var</span> <span class="nx">this_frame</span> <span class="o">=</span> <span class="nx">_frame</span><span class="p">.</span><span class="nx">build_frame</span><span class="p">(</span><span class="nx">args</span><span class="p">,</span> <span class="nx">want_receipt</span><span class="p">);</span>
+    <span class="nx">send_frame</span><span class="p">(</span><span class="nx">stomp</span><span class="p">,</span> <span class="nx">this_frame</span><span class="p">);</span>
+
+    <span class="k">return</span> <span class="nx">this_frame</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="kd">function</span> <span class="nx">send_frame</span><span class="p">(</span><span class="nx">stomp</span><span class="p">,</span> <span class="nx">_frame</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">socket</span> <span class="o">=</span> <span class="nx">stomp</span><span class="p">.</span><span class="nx">socket</span><span class="p">;</span>
+    <span class="kd">var</span> <span class="nx">frame_str</span> <span class="o">=</span> <span class="nx">_frame</span><span class="p">.</span><span class="nx">as_string</span><span class="p">();</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="nx">socket</span><span class="p">.</span><span class="nx">write</span><span class="p">(</span><span class="nx">frame_str</span><span class="p">)</span> <span class="o">===</span> <span class="kc">false</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">log</span><span class="p">.</span><span class="nx">debug</span><span class="p">(</span><span class="s1">&#39;Write buffered&#39;</span><span class="p">);</span>
+    <span class="p">}</span>
+
+    <span class="k">return</span> <span class="kc">true</span><span class="p">;</span>
+<span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-4">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-4">&#182;</a>               </div>               <h2>Stomp - Client API</h2>
+
+<p>Takes an argument object</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="kd">function</span> <span class="nx">Stomp</span><span class="p">(</span><span class="nx">args</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">port</span> <span class="o">=</span> <span class="nx">args</span><span class="p">[</span><span class="s1">&#39;port&#39;</span><span class="p">]</span> <span class="o">||</span> <span class="mi">61613</span><span class="p">;</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">host</span> <span class="o">=</span> <span class="nx">args</span><span class="p">[</span><span class="s1">&#39;host&#39;</span><span class="p">]</span> <span class="o">||</span> <span class="s2">&quot;127.0.0.1&quot;</span><span class="p">;</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">debug</span> <span class="o">=</span> <span class="nx">args</span><span class="p">[</span><span class="s1">&#39;debug&#39;</span><span class="p">];</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">login</span> <span class="o">=</span> <span class="nx">args</span><span class="p">[</span><span class="s1">&#39;login&#39;</span><span class="p">]</span> <span class="o">||</span> <span class="kc">null</span><span class="p">;</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">passcode</span> <span class="o">=</span> <span class="nx">args</span><span class="p">[</span><span class="s1">&#39;passcode&#39;</span><span class="p">]</span> <span class="o">||</span> <span class="kc">null</span><span class="p">;</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">log</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">StompLogging</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">debug</span><span class="p">);</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">_subscribed_to</span> <span class="o">=</span> <span class="p">{};</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">session</span> <span class="o">=</span> <span class="kc">null</span><span class="p">;</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">ssl</span> <span class="o">=</span> <span class="nx">args</span><span class="p">[</span><span class="s1">&#39;ssl&#39;</span><span class="p">]</span> <span class="o">?</span> <span class="kc">true</span> <span class="o">:</span> <span class="kc">false</span><span class="p">;</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">ssl_validate</span> <span class="o">=</span> <span class="nx">args</span><span class="p">[</span><span class="s1">&#39;ssl_validate&#39;</span><span class="p">]</span> <span class="o">?</span> <span class="kc">true</span> <span class="o">:</span> <span class="kc">false</span><span class="p">;</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">ssl_options</span> <span class="o">=</span> <span class="nx">args</span><span class="p">[</span><span class="s1">&#39;ssl_options&#39;</span><span class="p">]</span> <span class="o">||</span> <span class="p">{};</span>
+    <span class="k">this</span><span class="p">[</span><span class="s1">&#39;client-id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nx">args</span><span class="p">[</span><span class="s1">&#39;client-id&#39;</span><span class="p">]</span> <span class="o">||</span> <span class="kc">null</span><span class="p">;</span>
+<span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-5">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-5">&#182;</a>               </div>               <h2>Stomp is an EventEmitter</h2>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">Stomp</span><span class="p">.</span><span class="nx">prototype</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">process</span><span class="p">.</span><span class="nx">EventEmitter</span><span class="p">();</span></pre></div>             </td>           </tr>                               <tr id="section-6">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-6">&#182;</a>               </div>               <h2>Stomp.connect()</h2>
+
+<p><strong>Begin connection</strong></p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">Stomp</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">connect</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+    <span class="nx">_connect</span><span class="p">(</span><span class="k">this</span><span class="p">);</span>
+<span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-7">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-7">&#182;</a>               </div>               <h2>Stomp.handle_new_frame()</h2>
+
+<p><strong>Handle frame based on type. Emit events when needed.</strong></p>
+
+<p>Takes a <code>Frame</code> object</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">Stomp</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">handle_new_frame</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">this_frame</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">switch</span> <span class="p">(</span><span class="nx">this_frame</span><span class="p">.</span><span class="nx">command</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">case</span> <span class="s2">&quot;MESSAGE&quot;</span><span class="o">:</span>
+            <span class="k">if</span> <span class="p">(</span><span class="nx">utils</span><span class="p">.</span><span class="nx">really_defined</span><span class="p">(</span><span class="nx">this_frame</span><span class="p">.</span><span class="nx">headers</span><span class="p">[</span><span class="s1">&#39;message-id&#39;</span><span class="p">]))</span> <span class="p">{</span>
+                <span class="k">if</span> <span class="p">(</span><span class="nx">this_frame</span><span class="p">.</span><span class="nx">headers</span> <span class="o">!==</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="nx">this_frame</span><span class="p">.</span><span class="nx">headers</span><span class="p">.</span><span class="nx">destination</span> <span class="o">!==</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="k">this</span><span class="p">.</span><span class="nx">_subscribed_to</span><span class="p">[</span><span class="nx">this_frame</span><span class="p">.</span><span class="nx">headers</span><span class="p">.</span><span class="nx">destination</span><span class="p">]</span> <span class="o">!==</span> <span class="kc">null</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="kd">var</span> <span class="nx">subscription</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">_subscribed_to</span><span class="p">[</span><span class="nx">this_frame</span><span class="p">.</span><span class="nx">headers</span><span class="p">.</span><span class="nx">destination</span><span class="p">];</span>
+                    <span class="k">if</span> <span class="p">(</span><span class="nx">subscription</span><span class="p">.</span><span class="nx">enabled</span> <span class="o">&amp;&amp;</span> <span class="nx">subscription</span><span class="p">.</span><span class="nx">callback</span> <span class="o">!==</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="k">typeof</span><span class="p">(</span><span class="nx">subscription</span><span class="p">.</span><span class="nx">callback</span><span class="p">)</span> <span class="o">==</span> <span class="s1">&#39;function&#39;</span><span class="p">)</span> <span class="p">{</span>
+                        <span class="nx">subscription</span><span class="p">.</span><span class="nx">callback</span><span class="p">(</span><span class="nx">this_frame</span><span class="p">.</span><span class="nx">body</span><span class="p">,</span> <span class="nx">this_frame</span><span class="p">.</span><span class="nx">headers</span><span class="p">);</span>
+                    <span class="p">}</span>
+                <span class="p">}</span>
+                <span class="k">this</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">&#39;message&#39;</span><span class="p">,</span> <span class="nx">this_frame</span><span class="p">);</span>
+            <span class="p">}</span>
+
+            <span class="k">break</span><span class="p">;</span>
+        <span class="k">case</span> <span class="s2">&quot;CONNECTED&quot;</span><span class="o">:</span>
+            <span class="nx">log</span><span class="p">.</span><span class="nx">debug</span><span class="p">(</span><span class="s1">&#39;Connected to STOMP&#39;</span><span class="p">);</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">session</span> <span class="o">=</span> <span class="nx">this_frame</span><span class="p">.</span><span class="nx">headers</span><span class="p">[</span><span class="s1">&#39;session&#39;</span><span class="p">];</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">&#39;connected&#39;</span><span class="p">);</span>
+            <span class="k">break</span><span class="p">;</span>
+        <span class="k">case</span> <span class="s2">&quot;RECEIPT&quot;</span><span class="o">:</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">&#39;receipt&#39;</span><span class="p">,</span> <span class="nx">this_frame</span><span class="p">.</span><span class="nx">headers</span><span class="p">[</span><span class="s1">&#39;receipt-id&#39;</span><span class="p">]);</span>
+            <span class="k">break</span><span class="p">;</span>
+        <span class="k">case</span> <span class="s2">&quot;ERROR&quot;</span><span class="o">:</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">emit</span><span class="p">(</span><span class="s1">&#39;error&#39;</span><span class="p">,</span> <span class="nx">this_frame</span><span class="p">);</span>
+            <span class="k">break</span><span class="p">;</span>
+        <span class="k">default</span><span class="o">:</span>
+            <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">&quot;Could not parse command: &quot;</span> <span class="o">+</span> <span class="nx">this_frame</span><span class="p">.</span><span class="nx">command</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-8">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-8">&#182;</a>               </div>               <h2>Stomp.disconnect()</h2>
+
+<p><strong>Disconnect from STOMP broker</strong></p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">Stomp</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">disconnect</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+    <span class="nx">_disconnect</span><span class="p">(</span><span class="k">this</span><span class="p">);</span>
+<span class="p">}</span></pre></div>             </td>           </tr>                               <tr id="section-9">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-9">&#182;</a>               </div>               <h2>Stomp.subscribe(headers, callback)</h2>
+
+<p><strong>Subscribe to destination (queue or topic)</strong></p>
+
+<p>Takes a header object</p>
+
+<p>Takes a callback function</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">Stomp</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">subscribe</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">headers</span><span class="p">,</span> <span class="nx">callback</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">destination</span> <span class="o">=</span> <span class="nx">headers</span><span class="p">[</span><span class="s1">&#39;destination&#39;</span><span class="p">];</span>
+    <span class="nx">headers</span><span class="p">[</span><span class="s1">&#39;session&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">session</span><span class="p">;</span>
+    <span class="nx">send_command</span><span class="p">(</span><span class="k">this</span><span class="p">,</span> <span class="s1">&#39;SUBSCRIBE&#39;</span><span class="p">,</span> <span class="nx">headers</span><span class="p">);</span>
+
+    <span class="cm">/**</span>
+<span class="cm">    / Maybe we could subscribe to mulitple queues?</span>
+<span class="cm">    / if (destination instanceof Array) {</span>
+<span class="cm">    /   for (var = i; i &lt; 0; i++) {</span>
+<span class="cm">    /     this._subscribed_to[destination[i]] = { enabled: true, callback: callback };</span>
+<span class="cm">    /   }</span>
+<span class="cm">    / }</span>
+<span class="cm">    / else {</span>
+<span class="cm">    /     this._subscribed_to[destination] = { enabled: true, callback: callback };</span>
+<span class="cm">    / }</span>
+<span class="cm">    /</span>
+<span class="cm">    */</span>
+
+    <span class="k">this</span><span class="p">.</span><span class="nx">_subscribed_to</span><span class="p">[</span><span class="nx">destination</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span> <span class="nx">enabled</span><span class="o">:</span> <span class="kc">true</span><span class="p">,</span> <span class="nx">callback</span><span class="o">:</span> <span class="nx">callback</span> <span class="p">};</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">log</span><span class="p">.</span><span class="nx">debug</span><span class="p">(</span><span class="s1">&#39;subscribed to: &#39;</span> <span class="o">+</span> <span class="nx">destination</span> <span class="o">+</span> <span class="s1">&#39; with headers &#39;</span> <span class="o">+</span> <span class="nx">sys</span><span class="p">.</span><span class="nx">inspect</span><span class="p">(</span><span class="nx">headers</span><span class="p">));</span>
+<span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-10">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-10">&#182;</a>               </div>               <h2>Stomp.unsubscribe()</h2>
+
+<p><strong>Unsubscribe from destination (queue or topic)</strong></p>
+
+<p>Takes a header object</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">Stomp</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">unsubscribe</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">headers</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">destination</span> <span class="o">=</span> <span class="nx">headers</span><span class="p">[</span><span class="s1">&#39;destination&#39;</span><span class="p">];</span>
+    <span class="nx">headers</span><span class="p">[</span><span class="s1">&#39;session&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">session</span><span class="p">;</span>
+    <span class="nx">send_command</span><span class="p">(</span><span class="k">this</span><span class="p">,</span> <span class="s1">&#39;UNSUBSCRIBE&#39;</span><span class="p">,</span> <span class="nx">headers</span><span class="p">);</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">_subscribed_to</span><span class="p">[</span><span class="nx">destination</span><span class="p">].</span><span class="nx">enabled</span> <span class="o">=</span> <span class="kc">false</span><span class="p">;</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">log</span><span class="p">.</span><span class="nx">debug</span><span class="p">(</span><span class="s1">&#39;no longer subscribed to: &#39;</span> <span class="o">+</span> <span class="nx">destination</span><span class="p">);</span>
+<span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-11">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-11">&#182;</a>               </div>               <h2>Stomp.ack()</h2>
+
+<p><strong>Acknowledge received message</strong></p>
+
+<p>Takes a string representing the message id to ack</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">Stomp</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">ack</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">message_id</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">send_command</span><span class="p">(</span><span class="k">this</span><span class="p">,</span> <span class="s1">&#39;ACK&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;message-id&#39;</span><span class="o">:</span> <span class="nx">message_id</span><span class="p">});</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">log</span><span class="p">.</span><span class="nx">debug</span><span class="p">(</span><span class="s1">&#39;acknowledged message: &#39;</span> <span class="o">+</span> <span class="nx">message_id</span><span class="p">);</span>
+<span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-12">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-12">&#182;</a>               </div>               <h2>Stomp.begin()</h2>
+
+<p><strong>Begin transaction</strong></p>
+
+<p>Return a string representing the generated transaction id</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">Stomp</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">begin</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">transaction_id</span> <span class="o">=</span> <span class="nb">Math</span><span class="p">.</span><span class="nx">floor</span><span class="p">(</span><span class="nb">Math</span><span class="p">.</span><span class="nx">random</span><span class="p">()</span><span class="o">*</span><span class="mi">99999999999</span><span class="p">).</span><span class="nx">toString</span><span class="p">();</span>
+    <span class="nx">send_command</span><span class="p">(</span><span class="k">this</span><span class="p">,</span> <span class="s1">&#39;BEGIN&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;transaction&#39;</span><span class="o">:</span> <span class="nx">transaction_id</span><span class="p">});</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">log</span><span class="p">.</span><span class="nx">debug</span><span class="p">(</span><span class="s1">&#39;begin transaction: &#39;</span> <span class="o">+</span> <span class="nx">transaction_id</span><span class="p">);</span>
+    <span class="k">return</span> <span class="nx">transaction_id</span><span class="p">;</span>
+<span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-13">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-13">&#182;</a>               </div>               <h2>Stomp.commit()</h2>
+
+<p><strong>Commit transaction</strong></p>
+
+<p>Takes a string representing the transaction id generated by stomp.Stomp.begin()</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">Stomp</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">commit</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">transaction_id</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">send_command</span><span class="p">(</span><span class="k">this</span><span class="p">,</span> <span class="s1">&#39;COMMIT&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;transaction&#39;</span><span class="o">:</span> <span class="nx">transaction_id</span><span class="p">});</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">log</span><span class="p">.</span><span class="nx">debug</span><span class="p">(</span><span class="s1">&#39;commit transaction: &#39;</span> <span class="o">+</span> <span class="nx">transaction_id</span><span class="p">);</span>
+<span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-14">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-14">&#182;</a>               </div>               <h2>Stomp.abort()</h2>
+
+<p><strong>Abort transaction</strong></p>
+
+<p>Takes a string representing the transaction id generated by stomp.Stomp.begin()</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">Stomp</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">abort</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">transaction_id</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">send_command</span><span class="p">(</span><span class="k">this</span><span class="p">,</span> <span class="s1">&#39;ABORT&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;transaction&#39;</span><span class="o">:</span> <span class="nx">transaction_id</span><span class="p">});</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">log</span><span class="p">.</span><span class="nx">debug</span><span class="p">(</span><span class="s1">&#39;abort transaction: &#39;</span> <span class="o">+</span> <span class="nx">transaction_id</span><span class="p">);</span>
+<span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-15">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-15">&#182;</a>               </div>               <h2>Stomp.send()</h2>
+
+<p><strong>Send MESSAGE to STOMP broker</strong></p>
+
+<p>Takes a header object (destination is required)</p>
+
+<p>Takes a boolean requesting recipt of the sent message</p>
+
+<p>Returns a <code>Frame</code> object representing the message sent</p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">Stomp</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">send</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">headers</span><span class="p">,</span> <span class="nx">want_receipt</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">destination</span> <span class="o">=</span> <span class="nx">headers</span><span class="p">[</span><span class="s1">&#39;destination&#39;</span><span class="p">],</span>
+    <span class="nx">body</span> <span class="o">=</span> <span class="nx">headers</span><span class="p">[</span><span class="s1">&#39;body&#39;</span><span class="p">]</span> <span class="o">||</span> <span class="kc">null</span><span class="p">;</span>
+    <span class="k">delete</span> <span class="nx">headers</span><span class="p">[</span><span class="s1">&#39;body&#39;</span><span class="p">];</span>
+    <span class="nx">headers</span><span class="p">[</span><span class="s1">&#39;session&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">session</span><span class="p">;</span>
+    <span class="k">return</span> <span class="nx">send_command</span><span class="p">(</span><span class="k">this</span><span class="p">,</span> <span class="s1">&#39;SEND&#39;</span><span class="p">,</span> <span class="nx">headers</span><span class="p">,</span> <span class="nx">body</span><span class="p">,</span> <span class="nx">want_receipt</span><span class="p">)</span>
+<span class="p">};</span>
+
+<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span><span class="p">.</span><span class="nx">Stomp</span> <span class="o">=</span> <span class="nx">Stomp</span><span class="p">;</span>
+
+</pre></div>             </td>           </tr>                </tbody>     </table>   </div> </body> </html> 
