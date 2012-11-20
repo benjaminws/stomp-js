@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Same as stomp-producer.js, but transactional
 
-var stomp = require('./lib/stomp');
+var stomp = require('stomp');
 
 var num = process.argv[2];
 
