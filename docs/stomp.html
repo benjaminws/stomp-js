@@ -1,4 +1,4 @@
-<!DOCTYPE html>  <html> <head>   <title>stomp.js</title>   <meta http-equiv="content-type" content="text/html; charset=UTF-8">   <link rel="stylesheet" media="all" href="docco.css" /> </head> <body>   <div id="container">     <div id="background"></div>            <div id="jump_to">         Jump To &hellip;         <div id="jump_wrapper">           <div id="jump_page">                                           <a class="source" href="frame.html">                 frame.js               </a>                                           <a class="source" href="index.html">                 index.js               </a>                                           <a class="source" href="stomp-exceptions.html">                 stomp-exceptions.js               </a>                                           <a class="source" href="stomp-utils.html">                 stomp-utils.js               </a>                                           <a class="source" href="stomp.html">                 stomp.js               </a>                        </div>         </div>       </div>          <table cellpadding="0" cellspacing="0">       <thead>         <tr>           <th class="docs">             <h1>               stomp.js             </h1>           </th>           <th class="code">           </th>         </tr>       </thead>       <tbody>                               <tr id="section-1">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-1">&#182;</a>               </div>               <h2>stomp</h2>
+<!DOCTYPE html>  <html> <head>   <title>stomp.js</title>   <meta http-equiv="content-type" content="text/html; charset=UTF-8">   <link rel="stylesheet" media="all" href="rocco.css" /> </head> <body> <div id="navbar">     <h3>stomp-js - Implementation of the STOMP protocol in node.js<em></em></h3>   </div>   <div id="container">     <div id="background"></div>            <div id="jump_to">         Jump To &hellip;         <div id="jump_wrapper">           <div id="jump_page">           <a class="source" href="index.html">Index</a>                                           <a class="source" href="frame.html">                 frame.js               </a>                                           <a class="source" href="index.html">                 index.js               </a>                                           <a class="source" href="stomp.html">                 stomp.js               </a>                                           <a class="source" href="stomp-utils.html">                 stomp-utils.js               </a>                                           <a class="source" href="stomp-exceptions.html">                 stomp-exceptions.js               </a>                        </div>         </div>       </div>          <table cellpadding="0" cellspacing="0">       <thead>         <tr>           <th class="docs">             <h1>               stomp.js             </h1>           </th>           <th class="code">           </th>         </tr>       </thead>       <tbody>                               <tr id="section-1">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-1">&#182;</a>               </div>               <h2>stomp</h2>
 
 <p>The <code>Stomp</code> module provides you with a client interface for interacting with STOMP messaging brokers</p>
 
@@ -14,8 +14,7 @@
     passcode: 'guest',
 };
 
-var client = new stomp.Stomp(stomp_args);
-</code></pre>
+var client = new stomp.Stomp(stomp_args);</code></pre>
 
 <p>If debug is set to true, extra output will be printed to the console.</p>             </td>             <td class="code">               <div class="highlight"><pre></pre></div>             </td>           </tr>                               <tr id="section-2">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-2">&#182;</a>               </div>               <h2>Helpers to handle frames, and do parsing</h2>             </td>             <td class="code">               <div class="highlight"><pre><span class="kd">var</span> <span class="nx">net</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;net&#39;</span><span class="p">),</span>
     <span class="nx">tls</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;tls&#39;</span><span class="p">),</span>
@@ -279,7 +278,7 @@ var client = new stomp.Stomp(stomp_args);
 
 <p><strong>Disconnect from STOMP broker</strong></p>             </td>             <td class="code">               <div class="highlight"><pre><span class="nx">Stomp</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">disconnect</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
     <span class="nx">_disconnect</span><span class="p">(</span><span class="k">this</span><span class="p">);</span>
-<span class="p">}</span></pre></div>             </td>           </tr>                               <tr id="section-9">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-9">&#182;</a>               </div>               <h2>Stomp.subscribe()</h2>
+<span class="p">}</span></pre></div>             </td>           </tr>                               <tr id="section-9">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-9">&#182;</a>               </div>               <h2>Stomp.subscribe(headers, callback)</h2>
 
 <p><strong>Subscribe to destination (queue or topic)</strong></p>
 
@@ -289,6 +288,20 @@ var client = new stomp.Stomp(stomp_args);
     <span class="kd">var</span> <span class="nx">destination</span> <span class="o">=</span> <span class="nx">headers</span><span class="p">[</span><span class="s1">&#39;destination&#39;</span><span class="p">];</span>
     <span class="nx">headers</span><span class="p">[</span><span class="s1">&#39;session&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">session</span><span class="p">;</span>
     <span class="nx">send_command</span><span class="p">(</span><span class="k">this</span><span class="p">,</span> <span class="s1">&#39;SUBSCRIBE&#39;</span><span class="p">,</span> <span class="nx">headers</span><span class="p">);</span>
+
+    <span class="cm">/**</span>
+<span class="cm">    / Maybe we could subscribe to mulitple queues?</span>
+<span class="cm">    / if (destination instanceof Array) {</span>
+<span class="cm">    /   for (var = i; i &lt; 0; i++) {</span>
+<span class="cm">    /     this._subscribed_to[destination[i]] = { enabled: true, callback: callback };</span>
+<span class="cm">    /   }</span>
+<span class="cm">    / }</span>
+<span class="cm">    / else {</span>
+<span class="cm">    /     this._subscribed_to[destination] = { enabled: true, callback: callback };</span>
+<span class="cm">    / }</span>
+<span class="cm">    /</span>
+<span class="cm">    */</span>
+
     <span class="k">this</span><span class="p">.</span><span class="nx">_subscribed_to</span><span class="p">[</span><span class="nx">destination</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span> <span class="nx">enabled</span><span class="o">:</span> <span class="kc">true</span><span class="p">,</span> <span class="nx">callback</span><span class="o">:</span> <span class="nx">callback</span> <span class="p">};</span>
     <span class="k">this</span><span class="p">.</span><span class="nx">log</span><span class="p">.</span><span class="nx">debug</span><span class="p">(</span><span class="s1">&#39;subscribed to: &#39;</span> <span class="o">+</span> <span class="nx">destination</span> <span class="o">+</span> <span class="s1">&#39; with headers &#39;</span> <span class="o">+</span> <span class="nx">sys</span><span class="p">.</span><span class="nx">inspect</span><span class="p">(</span><span class="nx">headers</span><span class="p">));</span>
 <span class="p">};</span></pre></div>             </td>           </tr>                               <tr id="section-10">             <td class="docs">               <div class="pilwrap">                 <a class="pilcrow" href="#section-10">&#182;</a>               </div>               <h2>Stomp.unsubscribe()</h2>
