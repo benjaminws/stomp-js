@@ -5,7 +5,7 @@ stomp-js
 
 An exercise with node.js to implement the STOMP protocol.
 
-For documentation see doc/stomp.md and doc/frame.md
+For documentation see http://benjaminws.github.com/stomp-js/
 
 ## Installation
 
