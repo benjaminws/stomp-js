@@ -28,8 +28,14 @@ var messages = 0;
 
 client.connect();
 
+function message_callback(body, headers) {
+    console.log('Message Callback Fired!');
+    console.log('Headers: ' + sys.inspect(headers));
+    console.log('Body: ' + body);
+}
+
 client.on('connected', function() {
-    client.subscribe(headers);
+    client.subscribe(headers, message_callback);
     console.log('Connected');
 });
 
