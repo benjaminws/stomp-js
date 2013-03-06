@@ -2,7 +2,7 @@
   "name" : "stomp",
   "description": "Implementation of the STOMP protocol in node.js",
   "keywords": [ "STOMP", "messaging", "queue", "protocol" ],
-  "version": "v0.0.9",
+  "version": "v0.1.0",
   "homepage": "https://github.com/benjaminws/stomp-js",
   "author": "Benjamin W. Smith <benjaminws@just-another.net>",
   "contributors" : [ "rofflwaffls@gmail.com" ],
